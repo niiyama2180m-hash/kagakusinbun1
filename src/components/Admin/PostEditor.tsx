@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
 import { Post } from '../../types';
 import { Loader2, Image as ImageIcon, Wand2, Upload } from 'lucide-react';
+import heic2any from 'heic2any';
 
 interface PostEditorProps {
   post?: Post;
@@ -23,36 +24,56 @@ export default function PostEditor({ post, onSave, onCancel }: PostEditorProps) 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 画像圧縮・変換ロジック (簡易版: Canvasを使用)
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    try {
+      let imageFile = file;
 
-        // 最大幅を1200pxに制限
-        const maxWidth = 1200;
-        let width = img.width;
-        let height = img.height;
+      // HEIC形式の場合はJPEGに変換
+      if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.8,
+        });
+        
+        // 配列で返ってくる場合があるので調整
+        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        imageFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+      }
 
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
+      // 画像圧縮・変換ロジック (Canvasを使用)
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
 
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
+          // 最大幅を1200pxに制限
+          const maxWidth = 1200;
+          let width = img.width;
+          let height = img.height;
 
-        // JPEG形式で圧縮 (品質0.8)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setImage(dataUrl);
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // JPEG形式で圧縮 (品質0.8)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setImage(dataUrl);
+        };
+        img.src = event.target?.result as string;
       };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(imageFile);
+    } catch (error) {
+      console.error('Image conversion error:', error);
+      alert('画像の変換に失敗しました。別の画像をお試しください。');
+    }
   };
 
   const generateContent = async () => {

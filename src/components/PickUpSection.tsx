@@ -89,8 +89,9 @@ export default function PickUpSection({ posts }: PickUpSectionProps) {
         </div>
         
         <div className="mt-12 text-center md:hidden">
-            <a href="https://www.instagram.com/keisuk_.eyoshikawa/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium border-b border-black pb-1">
-                もっと見る <ArrowUpRight size={14} />
+            <a href="https://www.instagram.com/keisuk_.eyoshikawa/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium border border-gray-200 px-6 py-3 rounded-full hover:bg-gray-50 transition-colors shadow-sm">
+                <Instagram size={18} />
+                <span>インスタグラムで見る</span>
             </a>
         </div>
       </div>

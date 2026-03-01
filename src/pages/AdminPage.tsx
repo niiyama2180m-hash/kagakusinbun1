@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { Post } from '../types';
 import PostEditor from '../components/Admin/PostEditor';
-import { Plus, LayoutDashboard, FileText, Settings, LogOut, Trash2 } from 'lucide-react';
+import { Plus, LayoutDashboard, FileText, Settings, LogOut, Trash2, Home } from 'lucide-react';
 
 interface AdminPageProps {
   posts: Post[];
@@ -15,6 +16,8 @@ export default function AdminPage({ posts, onAddPost, onUpdatePost, onDeletePost
   const [isEditing, setIsEditing] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | undefined>(undefined);
 
+  const [activeTab, setActiveTab] = useState<'posts' | 'settings'>('posts');
+
   const handleSave = (post: Post) => {
     if (editingPost) {
       onUpdatePost(post);
@@ -23,11 +26,13 @@ export default function AdminPage({ posts, onAddPost, onUpdatePost, onDeletePost
     }
     setIsEditing(false);
     setEditingPost(undefined);
+    setActiveTab('posts');
   };
 
   const handleEdit = (post: Post) => {
     setEditingPost(post);
     setIsEditing(true);
+    setActiveTab('posts');
   };
 
   const handleDelete = (id: string) => {
@@ -50,112 +55,146 @@ export default function AdminPage({ posts, onAddPost, onUpdatePost, onDeletePost
           <p className="text-xs text-gray-500 mt-1">科学新聞 CMS</p>
         </div>
         <nav className="p-4 space-y-1">
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">
-            <LayoutDashboard size={18} />
-            ダッシュボード
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+          <button 
+            onClick={() => setActiveTab('posts')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'posts' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
             <FileText size={18} />
             記事一覧
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+          </button>
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === 'settings' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
             <Settings size={18} />
             設定
-          </a>
+          </button>
         </nav>
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-100">
-          <a href="/" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <Link to="/" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
             <LogOut size={18} />
             サイトに戻る
-          </a>
+          </Link>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 p-8">
-        <div className="max-w-5xl mx-auto">
-          <header className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">記事管理</h2>
-              <p className="text-gray-500 text-sm mt-1">新しいトピックの作成や編集を行います</p>
-            </div>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                <Plus size={18} />
-                新規作成
-              </button>
-            )}
-          </header>
+        {/* Mobile Header Link */}
+        <div className="md:hidden mb-6 flex justify-end">
+          <Link to="/" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-black bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+            <Home size={16} />
+            ホームに戻る
+          </Link>
+        </div>
 
-          {isEditing ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <PostEditor 
-                post={editingPost}
-                onSave={handleSave} 
-                onCancel={handleCancel} 
-              />
-            </motion.div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-medium">
-                    <th className="px-6 py-4">画像</th>
-                    <th className="px-6 py-4">タイトル</th>
-                    <th className="px-6 py-4">カテゴリ</th>
-                    <th className="px-6 py-4">日付</th>
-                    <th className="px-6 py-4 text-right">アクション</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {posts.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
-                        記事がありません。「新規作成」から記事を追加してください。
-                      </td>
-                    </tr>
-                  ) : (
-                    posts.map((post) => (
-                      <tr key={post.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                            <img src={post.image} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-medium text-gray-900">{post.title}</td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {post.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-gray-500 text-sm">{post.date}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-3">
-                            <button 
-                              onClick={() => handleEdit(post)}
-                              className="text-gray-400 hover:text-blue-600 font-medium text-sm transition-colors"
-                            >
-                              編集
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(post.id)}
-                              className="text-gray-400 hover:text-red-600 font-medium text-sm transition-colors"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
+        <div className="max-w-5xl mx-auto">
+          {activeTab === 'posts' ? (
+            <>
+              <header className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">記事管理</h2>
+                  <p className="text-gray-500 text-sm mt-1">新しいトピックの作成や編集を行います</p>
+                </div>
+                {!isEditing && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg font-bold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    <Plus size={18} />
+                    新規作成
+                  </button>
+                )}
+              </header>
+
+              {isEditing ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <PostEditor 
+                    post={editingPost}
+                    onSave={handleSave} 
+                    onCancel={handleCancel} 
+                  />
+                </motion.div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        <th className="px-6 py-4">画像</th>
+                        <th className="px-6 py-4">タイトル</th>
+                        <th className="px-6 py-4">カテゴリ</th>
+                        <th className="px-6 py-4">日付</th>
+                        <th className="px-6 py-4 text-right">アクション</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {posts.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                            記事がありません。「新規作成」から記事を追加してください。
+                          </td>
+                        </tr>
+                      ) : (
+                        posts.map((post) => (
+                          <tr key={post.id} className="hover:bg-gray-50 transition-colors group">
+                            <td className="px-6 py-4">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                                <img src={post.image} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 font-medium text-gray-900">{post.title}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {post.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-gray-500 text-sm">{post.date}</td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex justify-end gap-3">
+                                <button 
+                                  onClick={() => handleEdit(post)}
+                                  className="text-gray-400 hover:text-blue-600 font-medium text-sm transition-colors"
+                                >
+                                  編集
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(post.id)}
+                                  className="text-gray-400 hover:text-red-600 font-medium text-sm transition-colors"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-bold mb-6">設定</h2>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">GitHub連携</h3>
+                  <p className="text-gray-500 text-sm mb-4">
+                    現在、記事データはGitHubリポジトリに保存されています。
+                  </p>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
+                    <p>Repository: {import.meta.env.VITE_GITHUB_OWNER}/{import.meta.env.VITE_GITHUB_REPO}</p>
+                    <p>Branch: main</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
