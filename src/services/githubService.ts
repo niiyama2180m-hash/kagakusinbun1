@@ -9,20 +9,27 @@ const BRANCH = 'main';
 const DATA_FILE_PATH = 'data/posts.json';
 
 // 環境変数のバリデーション
-function validateConfig() {
-  if (!GITHUB_TOKEN || !OWNER || !REPO) {
+export function isConfigured(): boolean {
+  return !!(GITHUB_TOKEN && OWNER && REPO);
+}
+
+function validateConfig(isWrite: boolean = false) {
+  if (!isConfigured()) {
+    if (!isWrite) return false; // 読み込み時はエラーを投げない
+
     const missing = [];
     if (!GITHUB_TOKEN) missing.push('VITE_GITHUB_TOKEN');
     if (!OWNER) missing.push('VITE_GITHUB_OWNER');
     if (!REPO) missing.push('VITE_GITHUB_REPO');
     throw new Error(`GitHubの設定が不足しています: ${missing.join(', ')}。環境変数を確認してください。`);
   }
+  return true;
 }
 
 // Octokitの初期化 (遅延初期化)
 let _octokit: Octokit | null = null;
-function getOctokit() {
-  validateConfig();
+function getOctokit(isWrite: boolean = false) {
+  if (!validateConfig(isWrite)) return null;
   if (!_octokit) {
     _octokit = new Octokit({
       auth: GITHUB_TOKEN,
@@ -44,7 +51,8 @@ function base64ToUtf8(str: string): string {
 // データ取得
 export async function fetchPosts(): Promise<Post[]> {
   try {
-    const octokit = getOctokit();
+    const octokit = getOctokit(false);
+    if (!octokit) return []; // 設定がない場合は空配列を返す
     const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner: OWNER,
       repo: REPO,
@@ -71,7 +79,8 @@ export async function fetchPosts(): Promise<Post[]> {
 // データ保存 (画像のアップロード含む)
 export async function savePost(post: Post, isUpdate: boolean = false): Promise<void> {
   try {
-    const octokit = getOctokit();
+    const octokit = getOctokit(true);
+    if (!octokit) throw new Error('GitHubの設定が不足しています。');
     
     // 1. 現在のデータを取得
     let currentPosts: Post[] = [];
@@ -154,7 +163,8 @@ export async function savePost(post: Post, isUpdate: boolean = false): Promise<v
 // 記事削除
 export async function deletePost(id: string): Promise<void> {
   try {
-    const octokit = getOctokit();
+    const octokit = getOctokit(true);
+    if (!octokit) throw new Error('GitHubの設定が不足しています。');
     
     // 1. 現在のデータを取得
     const response = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {

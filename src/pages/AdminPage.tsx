@@ -3,7 +3,8 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Post } from '../types';
 import PostEditor from '../components/Admin/PostEditor';
-import { Plus, LayoutDashboard, FileText, Settings, LogOut, Trash2, Home } from 'lucide-react';
+import { Plus, LayoutDashboard, FileText, Settings, LogOut, Trash2, Home, AlertCircle } from 'lucide-react';
+import { isConfigured } from '../services/githubService';
 
 interface AdminPageProps {
   posts: Post[];
@@ -93,6 +94,25 @@ export default function AdminPage({ posts, onAddPost, onUpdatePost, onDeletePost
         </div>
 
         <div className="max-w-5xl mx-auto">
+          {!isConfigured() && (
+            <div className="mb-8 bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
+              <AlertCircle className="text-amber-600 shrink-0 mt-1" />
+              <div>
+                <h3 className="text-amber-900 font-bold mb-1">GitHub連携が未設定です</h3>
+                <p className="text-amber-800 text-sm leading-relaxed">
+                  記事を保存するには、AI Studioの環境変数に GitHub の設定を追加する必要があります。
+                  設定が完了するまで、記事の投稿や編集はできません。
+                </p>
+                <button 
+                  onClick={() => setActiveTab('settings')}
+                  className="mt-3 text-amber-900 font-bold text-sm underline hover:text-amber-700"
+                >
+                  設定方法を確認する
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'posts' ? (
             <>
               <header className="flex justify-between items-center mb-8">
@@ -183,17 +203,42 @@ export default function AdminPage({ posts, onAddPost, onUpdatePost, onDeletePost
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
               <h2 className="text-2xl font-bold mb-6">設定</h2>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <h3 className="text-lg font-medium mb-2">GitHub連携</h3>
-                  <p className="text-gray-500 text-sm mb-4">
-                    現在、記事データはGitHubリポジトリに保存されています。
-                  </p>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
-                    <p>Repository: {import.meta.env.VITE_GITHUB_OWNER}/{import.meta.env.VITE_GITHUB_REPO}</p>
-                    <p>Branch: main</p>
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <AlertCircle size={20} className={isConfigured() ? 'text-green-500' : 'text-amber-500'} />
+                    GitHub連携ステータス
+                  </h3>
+                  
+                  {isConfigured() ? (
+                    <div className="bg-green-50 border border-green-100 p-4 rounded-lg text-green-800 text-sm mb-4">
+                      連携済みです。記事データは以下のリポジトリに保存されます。
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-100 p-4 rounded-lg text-amber-800 text-sm mb-4">
+                      未設定です。環境変数を設定してください。
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm font-mono text-gray-600 space-y-1">
+                    <p><strong>VITE_GITHUB_OWNER:</strong> {import.meta.env.VITE_GITHUB_OWNER || '(未設定)'}</p>
+                    <p><strong>VITE_GITHUB_REPO:</strong> {import.meta.env.VITE_GITHUB_REPO || '(未設定)'}</p>
+                    <p><strong>VITE_GITHUB_TOKEN:</strong> {import.meta.env.VITE_GITHUB_TOKEN ? '******** (設定済み)' : '(未設定)'}</p>
                   </div>
                 </div>
+
+                {!isConfigured() && (
+                  <div className="border-t border-gray-100 pt-8">
+                    <h3 className="text-lg font-medium mb-4">設定手順</h3>
+                    <ol className="list-decimal list-inside space-y-3 text-gray-600 text-sm leading-relaxed">
+                      <li>GitHubで新しいリポジトリを作成します。</li>
+                      <li>GitHubの Settings &gt; Developer settings &gt; Personal access tokens からトークンを発行します（repo権限が必要）。</li>
+                      <li>AI Studioの環境変数設定画面を開きます。</li>
+                      <li>上記の3つの値を正確に入力して保存します。</li>
+                      <li>プレビュー画面をリロードしてください。</li>
+                    </ol>
+                  </div>
+                )}
               </div>
             </div>
           )}
